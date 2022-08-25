@@ -1,0 +1,228 @@
+######################################
+## Game Project (2020)              ##  
+## (Soccer)                         ##
+## ICS-3UI                          ##
+## Shahzeb Atif                     ##
+######################################
+
+###########################################################################################################################################################
+#Imports# 
+from tkinter import *
+from math import * 
+from time import *
+from random import *
+###########################################################################################################################################################
+#Setup#
+root = Tk()
+screen = Canvas(root, height=650, width=900, background='deepskyblue')
+screen.pack()
+###########################################################################################################################################################
+#Setting Initial Variables#
+def setInitialValues():
+    global GoalScored, GoalSaved
+    global xSoccerBall, ySoccerBall
+    global xGloves, yGloves
+    global xMouse, yMouse
+    global xSBL, ySBL
+    global Net, Time
+    global BallDrawing, GloveDrawing
+    global BallImageFile, GlovesImageFile
+    global GlovesMaxSpeed, distFromMouseToGloves, GlovesImage
+    global ballCenter, ballr, ballSpeed, frame
+    global liveCount, wentIn
+
+    wentIn = False
+    liveCount = 3
+    ballCenter = [450, 325]
+    ballr = 30
+    ballSpeed = 0.05
+    frame = 0
+    GoalScored = 0
+    GoalSaved = 0
+    xGloves = 450
+    yGloves = 450
+    xSoccerBall = 450
+    ySoccerBall = 325
+    xSBL = 450
+    ySBL = 325
+    BallImageFile = PhotoImage(file = "Ball.gif")
+    GlovesImageFile = PhotoImage(file = "Gloves.gif")
+    LauncherImageFile = PhotoImage(file = "SBL.gif")
+    #Net = x
+    distFromMouseToGloves = 10
+    speedGloves = 10
+    GlovesMaxSpeed = 20
+    yMouse = 400
+    xMouse = 450
+    GlovesImage = 0
+
+def drawBackground():
+    #Randomly Generates Clouds#
+    for c in range(20):
+        Cloudx1 = randint(0, 650)
+        Cloudy1 = randint(50, 150)
+            
+        for d in range(20):
+            rbw = randint(40, 60)
+
+            Cloudx1 = Cloudx1 + 5
+            
+            Cloudx2 = Cloudx1 + rbw
+            Cloudy2 = Cloudy1 - rbw
+            screen.create_oval( Cloudx1, Cloudy1, Cloudx2, Cloudy2, outline = "snow", fill = "snow")
+            
+    #Score Tracking Area#
+    screen.create_rectangle(0,300,175,650, fill = "lightsteelblue", outline = "black")
+    screen.create_rectangle(900,650,725,300, fill = "lightsteelblue", outline = "black")
+
+    #Posts and Crossbar#
+    screen.create_rectangle(50,50,850,850, fill = "white", outline = "black")
+
+    #Field (Trapezoid and all white lines)#
+    screen.create_rectangle(75,75,825,825, fill = "chartreuse2")
+    screen.create_line(175,300,725,300, fill = "white", width = 3)
+    screen.create_line(175,300,75,650, fill = "white", width = 3)
+    screen.create_line(725,300,825,650, fill = "white", width = 3)
+    screen.create_line(175,300,175,75, fill = "white", width = 3)
+    screen.create_line(725,300,725,75, fill = "white", width = 3)
+
+    #Border/Walls for the field#
+    screen.create_polygon(75,650,75,350,175,200,175,300, fill = "seashell3")
+    screen.create_polygon(825,650,825,350,725,200,725,300, fill = "seashell3")
+    screen.create_rectangle(175,200,725,300, fill = "seashell3")
+
+    #Sky that fits inside the net#
+    screen.create_rectangle(175,75,725,200, fill = "deepskyblue",outline = "deepskyblue")
+    screen.create_polygon(175,75,75,75,75,350,175,200, fill = "deepskyblue",outline = "deepskyblue")
+    screen.create_polygon(725,75,725,200,825,350,825,75, fill = "deepskyblue",outline = "deepskyblue")
+    screen.create_line(75,75,75,650,fill = "black")
+
+    #Outline for the Net and Borders#
+    screen.create_line(75,75,825,75,fill = "black")
+    screen.create_line(825,75,825,350,fill = "black")
+    screen.create_line(75,350,175,200,fill = "black")
+    screen.create_line(825,350,725,200,fill = "black")
+    screen.create_line(175,200,725,200,fill = "black")
+    screen.create_line(725,300,825,650,fill = "black")
+    screen.create_line(175,300,75,650,fill = "black")
+    screen.create_line(175,175,75,325,fill = "black")
+    screen.create_line(825,325,725,175,fill = "black")
+    screen.create_line(175,175,725,175,fill = "black")
+    screen.create_line(175,175,175,200,fill = "black")
+    screen.create_line(725,175,725,200,fill = "black")
+    screen.create_line(0,300,50,250,fill = "black")
+    screen.create_line(900,300,850,250,fill = "black")
+
+    #Sun#
+    screen.create_oval(850,50,950,-50,fill="yellow",outline = "orange")
+###########################################################################################################################################################
+def getDistance(x1, y1, x2, y2):
+    return sqrt( (x2 - x1)**2 + (y2-y1)**2 )
+
+
+def drawObjects():
+    global BallDrawing, GloveDrawing, LauncherDrawing
+    
+    BallDrawing = screen.create_oval(ballCenter[0] - ballr, ballCenter[1] - ballr, ballCenter[0] + ballr, ballCenter[1] + ballr, fill = "white")
+
+    GloveDrawing = screen.create_image(xGloves,yGloves,image = GlovesImageFile)
+
+    #LauncherDrawing = screen.create_image(xSBL,ySBL,image = LauncherImageFile)
+
+def getMousePosition( event ):
+    global xMouse, yMouse
+    
+    xMouse = event.x
+    yMouse = event.y
+
+def updateGlovesPosition():
+    global xDir, yDir, distFromMouseToGloves, xSpeed, ySpeed, xGloves, yGloves
+
+    xDir = xMouse - xGloves
+    yDir = yMouse - yGloves
+    
+    distFromGlovesToBall = getDistance( xGloves, yGloves, xMouse, yMouse )
+
+    speedGloves = min( GlovesMaxSpeed, distFromMouseToGloves/ 2)
+    xSpeed = speedGloves* xDir / distFromMouseToGloves
+    ySpeed = speedGloves* yDir / distFromMouseToGloves
+
+    xGloves = xGloves + xSpeed  
+    yGloves = yGloves + ySpeed
+
+def lifeLostMessage():
+    pass
+
+def updateBallPosition():
+    global ballr, ballCenter, ballSpeed, frame, wentIn, liveCount
+    H = "L" * 85 + "R" * 85
+    V = "D"*100         
+    ballr += ballSpeed
+    #H = choice(directionsH)
+    #V = choice(directionsV)
+    if H[frame] == "L":
+        ballCenter[0] -= 3
+    elif H[frame] == "R":
+        ballCenter[0] += 3
+    if V[frame] == "U":
+        ballCenter[1] -= 3
+    elif V[frame] == "D":
+        ballCenter[1] += 3
+    bottomY = ballCenter[0] - ballr
+    
+    if bottomY == 650:
+        wentIn = True
+    if wentIn:
+        liveCount -= 1
+    
+    
+def deleteImages():
+    screen.delete(GloveDrawing)
+    screen.delete(BallDrawing)
+
+def Rungame():
+    global frame
+    setInitialValues()
+    drawBackground()
+    updateBallPosition()
+    
+    while GoalScored < 3 or GoalSaved < 3:
+        updateGlovesPosition()
+        updateBallPosition()
+        
+        drawObjects()
+
+        screen.update()
+        sleep(0.03)
+        deleteImages()
+
+        frame += 1
+root.after( 0, Rungame )
+
+screen.bind("<Motion>", getMousePosition )
+
+screen.pack()
+screen.focus_set()
+
+
+root.mainloop()
+###########################################################################################################################################################
+#Gridlines(Used for design but no longer needed)#
+#spacing = 25
+#
+#for x in range(0, 900, spacing):
+#    
+#    screen.create_line(x, 0, x, 800, fill="white")
+#    screen.create_text(x, 5, text=str(x), font="Times 9", anchor = N)
+#
+#for y in range(0, 900, spacing):
+#
+#    screen.create_line(0, y, 800, y, fill="white")
+#    screen.create_text(5, y, text=str(y), font="Times 9", anchor = W)
+###########################################################################################################################################################
+
+
+
+
+
+
